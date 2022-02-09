@@ -1,7 +1,7 @@
 # Script to open/close port via Upnp
 # This script has been made for the DPC configuration
 # The router must have upnp unable (often enable by default)
-# It uses a config file (csv) to list the wanted devices and then is 
+# It uses a config file (csv) to list the wanted devices and then is
 # usable with python app.py [add|delete|list]
 #
 # If the router is not found (but has upnp enabled), this may be related to the linux firewall
@@ -56,7 +56,7 @@ def get_upnp_service(services, requested_action: str):
         for action in service.get_actions():
             if requested_action in action.name:
                 return service
-    raise Exception('Unable to add a port mapping')
+    raise Exception(f"Unable to get upnp service: {requested_action}\n")
 
 # Get nat translations from csv file
 def get_translations(filename, service) -> list[Mapping]:
@@ -66,7 +66,7 @@ def get_translations(filename, service) -> list[Mapping]:
         next(reader) # Skip the header, we only want the data here
         for r in reader:
             mappings.append(Mapping(service, *r)) # Create the Mapping object with the service and every fields
-    
+
     return mappings
 
 
@@ -80,21 +80,24 @@ actions = {
 
 if __name__ == '__main__':
 
-    # App must be run with add or delete as args    
+    # App must be run with add, delete, or ls as args
     if len(sys.argv) != 2 or not sys.argv[1] in actions.keys():
         print("Use python router-utility.py [add|delete|ls]")
         exit()
 
     upnp = upnpy.UPnP()
     print("Discovering Upnp devices...")
-    upnp.discover() # Needed in order to use get_igd
-    device = upnp.get_igd()
+    devices = upnp.discover() # Needed in order to use get_igd
+    device = devices[0]
+    for d in devices:
+      if "Gateway" not in d.get_friendly_name():
+        continue
+      device = d
+      break
+    print(f"Attempting to connect to {device}\n")
     services = device.get_services()
     # Get the needed service (which has the required action)
     service = get_upnp_service(services, actions[sys.argv[1]])
-    
-
-    service = get_upnp_service(services, 'AddPortMapping')
     print(f"Upnp device discovered: {device}\n")
 
     if sys.argv[1] == 'ls':
@@ -116,5 +119,5 @@ if __name__ == '__main__':
             elif sys.argv[1] == 'delete':
                 print("> Removing rules...")
                 m.delete()
-      
+
     print("\ndone!")
