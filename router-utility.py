@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     upnp = upnpy.UPnP()
     print("Discovering Upnp devices...")
-    devices = upnp.discover() # Needed in order to use get_igd
+    devices = upnp.discover(ST='urn:schemas-upnp-org:device:InternetGatewayDevice:1') # Needed in order to use get_igd
     device = devices[0]
     for d in devices:
       if "Gateway" not in d.get_friendly_name():
